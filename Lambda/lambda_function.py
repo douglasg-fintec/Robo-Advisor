@@ -50,11 +50,11 @@ def validate_data(firstName,age,investmentAmount,riskLevel,intent_request):
             return build_validation_result(
                 False,
                 "investmentAmount",
-                "The amount to invest should be greater than 5000, "
-                "please provide a correct amount you woulod like to invest.",
+                "The amount to invest must be a minimum of 5000, "
+                "please provide a correct amount you would like to invest.",
             )
 
-    # A True results is returned if age or investment_amount are valid
+    # A True results is returned if field are valid
     return build_validation_result(True, None, None)
 
 ### Dialog Actions Helper Functions ###
@@ -141,20 +141,21 @@ In this section, you will create an Amazon Lambda function that will validate th
 
 """
 
-
  ## return investment recommendation based on the selected risk level
 def return_investment_recommendation(risk_level):
     #Convert string to lower case
     risk_level = risk_level.lower()
     
+    recommendation  = ""
     #Define dictionaly of investment recommendations
     investment_recommendation={
-    'none': "100% bonds (AGG), 0% equities (SPY)",
-    'low': "60% bonds (AGG), 40% equities (SPY)",
-    'medium': "40% bonds (AGG), 60% equities (SPY)",
-    'high': "20% bonds (AGG), 80% equities (SPY)"
+     'none': "100% bonds (AGG), 0% equities (SPY)",
+     'low': "60% bonds (AGG), 40% equities (SPY)",
+     'medium': "40% bonds (AGG), 60% equities (SPY)",
+     'high': "20% bonds (AGG), 80% equities (SPY)"
      }
-    return investment_recommendation.get(risk_level)
+    recommendation  = investment_recommendation.get(risk_level)
+    return recommendation 
 
 ### Intents Handlers ###
 def recommend_portfolio(intent_request):
@@ -175,33 +176,45 @@ def recommend_portfolio(intent_request):
         # Gets all the slots
         slots = get_slots(intent_request)
        
-    ### Validate that age and investment amounts
-    validation_result = validate_data(first_name,age,investment_amount,risk_level,intent_request)
+        ### Validate that age and investment amounts
+        validation_result = validate_data(first_name,age,investment_amount,risk_level,intent_request)
     
-    # If the data provided by the user is not valid,
-    # the elicitSlot dialog action is used to re-prompt for the first violation detected.
-    if not validation_result["isValid"]:
-        slots[validation_result["violatedSlot"]] = None  # Cleans invalid slot
+        # If the data provided by the user is not valid,
+        # the elicitSlot dialog action is used to re-prompt for the first violation detected.
+        if not validation_result["isValid"]:
+            slots[validation_result["violatedSlot"]] = None  # Cleans invalid slot
         
-    # Fetch current session attributes
-    output_session_attributes = intent_request["sessionAttributes"]
+            # Returns an elicitSlot dialog to request new data for the invalid slot
+            return elicit_slot(
+                intent_request["sessionAttributes"],
+                intent_request["currentIntent"]["name"],
+                slots,
+                validation_result["violatedSlot"],
+                validation_result["message"],
+            )
+        
+        # Fetch current session attributes
+        output_session_attributes = intent_request["sessionAttributes"]
     
-    # Once all slots are valid, a delegate dialog is returned to Lex to choose the next course of action.
-    return delegate(output_session_attributes, get_slots(intent_request))
+        #  Once all slots are valid, a delegate dialog is returned to Lex to choose the next course of action.
+        return delegate(output_session_attributes, get_slots(intent_request))
+    
 
-    # Return a message with recommended portfolio.
-    
-    recommeded_portfolio = return_investment_recommendation(risk_level)
+    # Get the portfolion recomendation.
+
     return close(
         intent_request["sessionAttributes"],
         "Fulfilled",
         {
             "contentType": "PlainText",
-            "content": recommeded_portfolio,
+            "content": """Thank you for your information;
+            our current recomendation is that your porfolio consists of {}.
+            """.format(
+                return_investment_recommendation(risk_level)
+            ),
         },
     )
-
-
+    
         
 ### Intents Dispatcher ###
 def dispatch(intent_request):
