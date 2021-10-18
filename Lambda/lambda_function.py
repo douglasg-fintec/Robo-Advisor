@@ -110,7 +110,36 @@ In this section, you will create an Amazon Lambda function that will validate th
 7. Build your bot, and test it with valid and invalid data for the slots.
 
 """
+### Functionality Validate Age ###
+def validate_age(age):
+    """
+    Validate the age is within defined range.
+    """
+    if not (age > 0 and age < 65):
+        raise ValueError("The age entered by the user ( " + age + " ) is not in the valid age range") 
+        
+    return age
 
+
+### Functionality Validate Investment Amount ###
+def validate_investment_amount(inv_amt):
+    """
+    Securely validates investtment amounty entered by the user.
+    """
+    if  inv_amt < 5000:
+        raise ValueError("The investment amount entered by the user ( " + inv_amt + " ) must be greater than 5000") 
+        
+    return inv_amt
+
+ ## return investment recommendation based on the selected risk level
+    def return_investment_recommendation(risk):
+        investment_recommendation={
+           'none': "100% bonds (AGG), 0% equities (SPY)",
+           'low': "60% bonds (AGG), 40% equities (SPY)",
+           'medium': "40% bonds (AGG), 60% equities (SPY)",
+           'high': "20% bonds (AGG), 80% equities (SPY)"
+        }
+        return return_investment_recommendation(risk)
 
 ### Intents Handlers ###
 def recommend_portfolio(intent_request):
@@ -124,7 +153,13 @@ def recommend_portfolio(intent_request):
     risk_level = get_slots(intent_request)["riskLevel"]
     source = intent_request["invocationSource"]
 
-    # YOUR CODE GOES HERE!
+    try:
+        investment_amount = validate_investment_amount(investment_amount)
+        age = validate_age(age)
+        return return_investment_recommendation(risk_level)
+
+    except ValueError:
+      raise Exception(ValueError)
 
 
 ### Intents Dispatcher ###
